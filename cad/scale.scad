@@ -14,15 +14,16 @@ cell_width = 12.7;
 cell_height = 12.7;
 cell_hole_end = 5;
 cell_hole_spacing = 15;
-// Two cells under the deck share the load; the electronics add their raw counts.
-cell_pitch = 60;
-cell_rows = [-cell_pitch,cell_pitch];
+// Two cells across the deck, one near each end of the length, running along the width.
+// They are mirrored, so the two free ends sit diagonal and spread the load along the length.
+cell_pitch = 65;
+cell_placements = [[-cell_pitch,90],[cell_pitch,-90]];
 // Lips beside each pedestal pad hold the cell straight and centered; the screws only clamp.
 cell_slot = 13;
 lip_height = 1;
 // Potting over the strain gauges stands proud of the top and bottom faces.
 cell_potting = 1;
-// The fixed end is the cable end, on the side of the boards (-1 = left).
+// The fixed end is the cable end, on the side of the boards (-1 = left in the cell's own frame).
 fixed_side = -1;
 deck_bottom = 24.5;
 deck_height = 7.5;
@@ -47,7 +48,8 @@ esp32_pcb = [17.75,22.75,1.67];
 esp32_usb_length = 1.75;
 esp32_usb_height = 4.82;
 esp32_usb_width = 8.5;
-esp32_x = -95;
+// The boards sit in the gap between the two cells, against the rear wall.
+esp32_x = -30;
 esp32_base_z = floor_height+1;
 // The connector tip meets the inner rear wall so a cable engages through the notch.
 esp32_usb_tip_y = platform_width/2-wall;
@@ -103,6 +105,10 @@ moving_reach = moving_screw-washer_height-cell_height;
 // Clamp pads cover both holes plus washer margin and stay clear of the strain-gauge zone.
 mount_length = cell_hole_end+cell_hole_spacing+4;
 mount_center = cell_length/2-mount_length/2;
+// How far the rails run from the pedestals, across the width towards the far wall.
+rail_far = base_width/2-wall+0.1;
+// Half-width of the clear channel between the two cells, where the boards live.
+cell_gap = cell_pitch-cell_width/2-3-rail_width;
 pad_x = platform_length/2-15;
 pad_y = base_width/2-15;
 assert(base_width >= platform_width && platform_length >= 246+2*rim_width);
@@ -127,9 +133,9 @@ assert((channel_overrun+cell_hole_end-m3_nut/2+under_depth-channel_flank-washer_
 // The channel roof is wider than the screws, 3 mm above their tips, and leaves a solid plate above.
 assert(cell_width/2+channel_gap-channel_flank-channel_rise >= 2 && deck_bottom+channel_rise-fixed_tip >= 3);
 assert(deck_height-channel_rise >= 4);
-// The rails and lips beside the outer cell stay inside the shell wall.
-assert(cell_pitch+cell_width/2+3+rail_width <= base_width/2-wall);
-assert(cell_pitch+cell_slot/2 <= platform_width/2-rim_width);
+// Each cell, its lips and its rails stay inside the shell.
+assert(cell_pitch+cell_width/2+3+rail_width <= platform_length/2-wall);
+assert(rail_far <= base_width/2-wall+0.1 && mount_center+mount_length/2+rail_top-floor_height <= base_width/2-wall);
 // The board envelope and its USB connector stay clear of the shell and inside the notch.
 assert(esp32_base_z+esp32_pcb[2] <= shell_height);
 assert(esp32_x-esp32_pcb[0]/2 >= -(platform_length/2-wall));
@@ -139,8 +145,9 @@ assert(esp32_x-esp32_usb_width/2 >= notch_x);
 assert(esp32_x+esp32_usb_width/2 <= notch_x+notch_width);
 // A USB-C plug body (about 6.5 mm tall) centred on the connector clears the notch floor and footing.
 assert(notch_z > floor_height && notch_z <= esp32_base_z+(esp32_pcb[2]+esp32_usb_height)/2-3.5);
-// The HX711 pockets stay clear of the pedestals, the rails and the front wall.
-assert(fixed_side == -1 && esp32_x+hx711_pcb[0]/2+board_clear+cradle_wall <= -(mount_center+mount_length/2+rail_top-floor_height));
+// The HX711 pockets stay clear of the cells and their rails, in the gap between the two.
+assert(fixed_side == -1 && esp32_x+hx711_pcb[0]/2+board_clear+cradle_wall <= cell_gap);
+assert(esp32_x-hx711_pcb[0]/2-board_clear-cradle_wall >= -cell_gap);
 assert(hx711_rows[0]-hx711_pcb[1]/2-board_clear-cradle_wall >= -(base_width/2-wall)+2);
 assert(hx711_rows[1]+hx711_pcb[1]/2+board_clear+cradle_wall <= esp32_back_y-board_clear-cradle_wall);
 
@@ -155,6 +162,11 @@ module soft_plate(l,w,h,r=6,bevel=0.8) {
         translate([0,0,bevel]) outline(l,w,h-2*bevel,r);
         outline(l-2*bevel,w-2*bevel,h,r-bevel);
     }
+}
+
+// The two cells, mirrored: each in its own frame, then turned across the width and spaced along the length.
+module each_cell() {
+    for(p=cell_placements) translate([p[0],0,0]) rotate([0,0,p[1]]) children();
 }
 
 // Square-cornered, so the lips and the pedestal merge flush with the rails beside them.
@@ -277,19 +289,38 @@ module hx711_cap(y) {
         cube([hx711_pcb[0],y1-y0,cradle_top-esp32_base_z-hx711_height-0.49]);
 }
 
-// The load tips each pedestal towards its cell's free end. Rails along each cell spread those short
-// couples over the length of the base; they taper as the bending load does. Nothing goes under a cell.
-module base_rails() {
+module hx711_cradles() {
+    for(y=hx711_rows) hx711_cradle(y);
+}
+
+// The load tips each pedestal towards that cell's free end. Rails along the cell spread that short
+// couple over the width of the base; they taper as the bending load does. Nothing goes under a cell.
+module cell_rail() {
     inner = cell_width/2+3-0.1;
     back = mount_center+mount_length/2;
     front = mount_center-mount_length/2;
-    far = platform_length/2-wall+0.1;
     rise = rail_top-floor_height;
-    for(cy=cell_rows) scale([-fixed_side,1,1]) translate([0,cy,0])
-        for(side=[0,1]) mirror([0,side,0])
-            translate([0,inner+rail_width,0]) rotate([90,0,0]) linear_extrude(rail_width)
-                polygon([[-back-rise,floor_height-0.1],[-back-rise,floor_height],[-back,rail_top],
-                         [-front,rail_top],[far,rail_end],[far,floor_height-0.1]]);
+    scale([-fixed_side,1,1]) for(side=[0,1]) mirror([0,side,0])
+        translate([0,inner+rail_width,0]) rotate([90,0,0]) linear_extrude(rail_width)
+            polygon([[-back-rise,floor_height-0.1],[-back-rise,floor_height],[-back,rail_top],
+                     [-front,rail_top],[rail_far,rail_end],[rail_far,floor_height-0.1]]);
+}
+
+module cell_pad() {
+    translate([fixed_side*mount_center-mount_length/2,-cell_width/2-3,floor_height-0.1])
+        cube([mount_length,cell_width+6,cell_bottom-floor_height+0.1]);
+    translate([fixed_side*mount_center,0,cell_bottom-0.01]) locating_lips(lip_height+0.01);
+}
+
+module cell_bores_fixed() {
+    hole_positions(fixed_side) {
+        bore(0,0,m3_clear,-0.1,cell_bottom+0.2);
+        bore(0,0,6.2,-0.1,head_bore+0.1);
+    }
+}
+
+module cell_bores_moving() {
+    hole_positions(-fixed_side) bore(0,0,washer_od+1,-0.1,floor_height+0.2);
 }
 
 module base() {
@@ -302,43 +333,53 @@ module base() {
                             shell_height,6-wall);
             }
             soft_plate(platform_length,base_width,floor_height,8);
-            for(cy=cell_rows) {
-                translate([fixed_side*mount_center-mount_length/2,cy-cell_width/2-3,floor_height-0.1])
-                    cube([mount_length,cell_width+6,cell_bottom-floor_height+0.1]);
-                translate([fixed_side*mount_center,cy,cell_bottom-0.01]) locating_lips(lip_height+0.01);
+            each_cell() {
+                cell_pad();
+                cell_rail();
             }
-            base_rails();
             esp32_cradle();
             hx711_cradles();
         }
         // Fixed-end screw heads sit in counterbores; the hex key reaches them from below.
-        for(cy=cell_rows) hole_positions(fixed_side,cy) {
-            bore(0,0,m3_clear,-0.1,cell_bottom+0.2);
-            bore(0,0,6.2,-0.1,head_bore+0.1);
-        }
+        each_cell() cell_bores_fixed();
         // Moving-end screws and their hex key enter through the floor.
-        for(cy=cell_rows) hole_positions(-fixed_side,cy) bore(0,0,washer_od+1,-0.1,floor_height+0.2);
+        each_cell() cell_bores_moving();
         // Open to the rim so the cable notch prints without a roof bridge.
         translate([notch_x,platform_width/2-wall-0.1,notch_z]) cube([notch_width,wall+0.3,shell_height]);
     }
 }
 
-module hx711_cradles() {
-    for(y=hx711_rows) hx711_cradle(y);
-}
-
 // Assembly coordinates: plate at Z 0-deck_height, rim above, solid underside below.
 // Printed top up, flat on the underside; only the plate edge outside it needs support.
-module deck() {
+module cell_channel() {
     h = under_depth;
-    inner_l = platform_length-2*wall;
-    inner_w = platform_width-2*wall;
     c = cell_width/2+channel_gap;
     pad_in = -fixed_side*(mount_center-mount_length/2);
     cell_end = fixed_side*(cell_length/2+channel_overrun);
     x0 = min(cell_end,pad_in);
     x1 = max(cell_end,pad_in);
     slope = channel_flank+channel_rise;
+    // A channel over the free part of the cell, its potting and the fixed-end screws: a short vertical
+    // foot, then flanks on all four sides up to a narrow roof inside the plate. Nothing bridges wide.
+    translate([x0,-c,-h-0.1]) cube([x1-x0,2*c,h-channel_flank+0.11]);
+    hull() {
+        translate([x0,-c,-channel_flank]) cube([x1-x0,2*c,0.01]);
+        translate([x0+slope,slope-c,channel_rise-0.01]) cube([x1-x0-2*slope,2*(c-slope),0.01]);
+    }
+}
+
+module cell_nut_wells() {
+    // The nuts drop in from the top and pull each seat down onto its cell.
+    hole_positions(-fixed_side) {
+        bore(0,0,m3_clear,-under_depth-0.1,nut_seat+0.2);
+        translate([0,0,-under_depth+nut_seat]) cylinder(d=m3_nut,h=under_depth+deck_height-nut_seat+0.1,$fn=6);
+    }
+}
+
+module deck() {
+    h = under_depth;
+    inner_l = platform_length-2*wall;
+    inner_w = platform_width-2*wall;
     difference() {
         union() {
             difference() {
@@ -349,25 +390,13 @@ module deck() {
             translate([0,0,-h])
                 outline(inner_l-2*under_gap,inner_w-2*under_gap,h+0.1,max(1,6-wall-under_gap));
         }
-        // A channel over each free part of a cell, its potting and the fixed-end screws: a short vertical
-        // foot, then flanks on all four sides up to a narrow roof inside the plate. Nothing bridges wide.
-        for(cy=cell_rows) translate([0,cy,0]) {
-            translate([x0,-c,-h-0.1]) cube([x1-x0,2*c,h-channel_flank+0.11]);
-            hull() {
-                translate([x0,-c,-channel_flank]) cube([x1-x0,2*c,0.01]);
-                translate([x0+slope,slope-c,channel_rise-0.01]) cube([x1-x0-2*slope,2*(c-slope),0.01]);
-            }
-        }
-        // The nuts drop in from the top and pull each seat down onto its cell.
-        for(cy=cell_rows) hole_positions(-fixed_side,cy) {
-            bore(0,0,m3_clear,-under_depth-0.1,nut_seat+0.2);
-            translate([0,0,-under_depth+nut_seat]) cylinder(d=m3_nut,h=under_depth+deck_height-nut_seat+0.1,$fn=6);
-        }
+        each_cell() cell_channel();
+        each_cell() cell_nut_wells();
     }
 }
 
 module cell_reference() {
-    for(cy=cell_rows) translate([0,cy,0]) difference() {
+    difference() {
         translate([-cell_length/2,-cell_width/2,0]) cube([cell_length,cell_width,cell_height]);
         hole_positions(fixed_side) bore(0,0,5,-0.1,cell_height+0.2);
         hole_positions(-fixed_side) bore(0,0,4,-0.1,cell_height+0.2);
@@ -389,22 +418,18 @@ module board_envelopes() {
             cube([esp32_usb_width,esp32_usb_length+6,esp32_usb_height-esp32_pcb[2]]);
 }
 
-module screws() {
-    color("Silver") {
-        for(cy=cell_rows) translate([0,cy,0]) {
-            hole_positions(fixed_side) {
-                translate([0,0,head_bore-head_height]) cylinder(d=5.5,h=head_height);
-                translate([0,0,head_bore]) cylinder(d=3,h=fixed_screw);
-                translate([0,0,cell_top]) cylinder(d=washer_od,h=washer_height);
-                translate([0,0,cell_top+washer_height]) cylinder(d=m3_nut,h=nut_height,$fn=6);
-            }
-            hole_positions(-fixed_side) translate([0,0,cell_bottom-washer_height]) {
-                cylinder(d=3,h=moving_screw);
-                cylinder(d=washer_od,h=washer_height);
-                translate([0,0,-head_height]) cylinder(d=5.5,h=head_height);
-                translate([0,0,washer_height+cell_height+nut_seat]) cylinder(d=m3_nut,h=nut_height,$fn=6);
-            }
-        }
+module cell_screws() {
+    hole_positions(fixed_side) {
+        translate([0,0,head_bore-head_height]) cylinder(d=5.5,h=head_height);
+        translate([0,0,head_bore]) cylinder(d=3,h=fixed_screw);
+        translate([0,0,cell_top]) cylinder(d=washer_od,h=washer_height);
+        translate([0,0,cell_top+washer_height]) cylinder(d=m3_nut,h=nut_height,$fn=6);
+    }
+    hole_positions(-fixed_side) translate([0,0,cell_bottom-washer_height]) {
+        cylinder(d=3,h=moving_screw);
+        cylinder(d=washer_od,h=washer_height);
+        translate([0,0,-head_height]) cylinder(d=5.5,h=head_height);
+        translate([0,0,washer_height+cell_height+nut_seat]) cylinder(d=m3_nut,h=nut_height,$fn=6);
     }
 }
 
@@ -412,13 +437,13 @@ module assembly() {
     color([0.20,0.22,0.24]) base();
     for(x=[-pad_x,pad_x]) for(y=[-pad_y,pad_y])
         color([0.08,0.08,0.08]) translate([x,y,-foot_height]) cylinder(d=12,h=foot_height);
-    screws();
+    color("Silver") each_cell() cell_screws();
     if(show_electronics) board_envelopes();
     color([0.45,0.47,0.5]) translate([0,0,explode]) {
         esp32_cap();
         for(y=hx711_rows) hx711_cap(y);
     }
-    color("Silver") translate([0,0,cell_bottom+explode]) cell_reference();
+    color("Silver") translate([0,0,cell_bottom+explode]) each_cell() cell_reference();
     color([0.27,0.29,0.31]) translate([0,0,deck_bottom+2*explode]) deck();
 }
 

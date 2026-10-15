@@ -81,12 +81,12 @@ if __name__ == "__main__":
                 location=(x / 1000, y / 1000, -0.001),
             )
             bpy.context.object.data.materials.append(rubber)
-    for y in (-60, 60):
-        box((0, y, 12.65), (80, 12.7, 12.7), rubber)
+    for x in (-65, 65):
+        box((x, 0, 12.65), (12.7, 80, 12.7), rubber)
     for y in (-25, 25):
-        box((-95, y, 6.61), (21.06, 34.35, 3.22), rubber)
-    box((-95, 71.275, 5.835), (17.75, 22.75, 1.67), board)
-    box((-95, 80.525, 8.245), (8.5, 7.75, 3.15), connector)
+        box((-30, y, 6.61), (21.06, 34.35, 3.22), rubber)
+    box((-30, 71.275, 5.835), (17.75, 22.75, 1.67), board)
+    box((-30, 80.525, 8.245), (8.5, 7.75, 3.15), connector)
     bpy.ops.mesh.primitive_plane_add(size=400, location=(0, 0, -0.0021))
     bpy.context.object.data.materials.append(material("Backdrop", (0.68, 0.70, 0.72)))
     light("Key", (-0.15, -0.18, 0.3), 1.2, 0.23)
