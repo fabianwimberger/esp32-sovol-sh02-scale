@@ -6,9 +6,9 @@ Why the parts look the way they do, and what the design does not cover. Z positi
 
 The dryer's feet stand inside the rim on the top. Seats in the top's underside are clamped to the free ends of the two cells; the cable ends of the cells are clamped to two pedestals in the base. That is the only connection between the two parts.
 
-Because the dryer is tall and holds two spools, the top is carried on two cells instead of one. Each cell behaves like the single cell of the smaller scale, but the pair spreads the load over a 120 mm span, so the top rocks far less and an off-centre load still sums correctly: the vertical forces on the two cells always add up to the weight. The two raw counts are added before filtering, so the electronics, the stability gate and the calibration see one number.
+Because the dryer is tall and holds two spools, the top is carried on two cells instead of one. Each cell behaves like the single cell of the smaller scale, but the pair is placed across the width, one near each end of the length, and mirrored so their free ends sit at opposite corners. The two seats are 130 mm apart along the length, so the top barely cantilevers, and an off-centre load still sums correctly: the vertical forces on the two cells always add up to the weight. The two raw counts are added before filtering, so the electronics, the stability gate and the calibration see one number.
 
-Each load tips its pedestal towards that cell's free end: its front edge presses down and its rear screw pulls up with about three times the load each, 19 mm apart. Two solid rails run beside each cell from behind the pedestal to the far end wall and spread that couple over 140 mm. Nothing stands under the cells, which have to bend freely.
+Each load tips its pedestal towards that cell's free end: its front edge presses down and its rear screw pulls up with about three times the load each, 19 mm apart. Two solid rails run beside each cell from behind the pedestal across the width to the far wall and spread that couple over 140 mm. Nothing stands under the cells, which have to bend freely.
 
 ## Clearances
 
@@ -34,20 +34,20 @@ The screws have about 1 mm of play in the cell's holes. Lips on each pedestal fo
 
 ## Stiffness
 
-The top is carried from two 24 mm seats 120 mm apart and cantilevers about 85 mm past each. It is a 7.5 mm plate on a solid underside 5.5 mm deep that hangs inside the base and ends level with the top of the cells, with a channel over each cell. At this depth a solid section is the stiffest option: ribs would sag about twice as much.
+The top is carried from two 24 mm seats 130 mm apart along its length and cantilevers only about 60 mm past each, so it is stiffer than the single-cell scale at the same plate depth. It is a 7.5 mm plate on a solid underside 5.5 mm deep that hangs inside the base and ends level with the top of the cells, with a channel over each cell. At this depth a solid section is the stiffest option: ribs would sag about twice as much.
 
-The cantilever is shorter than on the single-cell scale, so the deck sags less for the same depth. Sag does not change the reading, since all weight still passes through the cells.
+The cantilever is much shorter than on the single-cell scale, so the deck sags less for the same depth. Sag does not change the reading, since all weight still passes through the cells.
 
 ## Dimensions
 
 | Feature | Position |
 |---|---|
 | Base | 251 × 200 mm footing, Z 0–4; 251 × 172 mm shell with 1.6 mm walls to Z 21 |
-| Pedestals | X −40 to −16, at Y ±60; top at Z 6.3, lips to Z 7.3 |
-| Rails | 6 mm wide beside each cell; Z 15 at the pedestal, tapering to Z 8 at the far wall |
-| Cells | Z 6.3–19, screws at X ±20 and ±35, Y ±60 |
+| Pedestals | X ±65, at Y −40 to −16 and 16 to 40; top at Z 6.3, lips to Z 7.3 |
+| Rails | 6 mm wide beside each cell, running along the width; Z 15 at the pedestal, tapering to Z 8 at the far wall |
+| Cells | Z 6.3–19, screws at Y ±20 and ±35, X ±65, mirrored |
 | Board pockets | Boards at Z 5, walls to Z 10.5, caps to Z 12.1 |
-| USB notch | X −103 to −87 in the rear wall, above Z 4.5 |
+| USB notch | X −38 to −22 in the rear wall, above Z 4.5 |
 | Top | Plate Z 24.5–32, rim to Z 35, underside 239.8 × 160.8 mm down to Z 19 |
 | Pads | X ±110.5, Y ±85 |
 

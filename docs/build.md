@@ -64,7 +64,7 @@ The ESP32 cap is notched for wires on the second to fifth pin from the USB edge 
 
 1. Stick the four rubber pads under the corners of the base. They keep the screw heads and the floor openings clear of the table.
 2. Push an M3 × 20 up through each counterbore under each pedestal.
-3. Lower a cell over the two screws, cable end into the slot between the pedestal lips, cable towards the boards. Which face is up does not matter. Repeat for the second cell.
+3. Lower a cell over the two screws at one end of the base, cable end into the slot between the pedestal lips, cable towards the boards. The cells run across the width and are mirrored, so their free ends sit at opposite corners. Which face is up does not matter; repeat for the second cell.
 4. Put a washer and a nut on each screw on top of the cells and tighten, holding the head with a hex key from below.
 5. Drop the ESP32-C3 into the rear pocket with its USB-C connector in the wall notch, and the two HX711 boards into their pockets in front of it with DT/SCK towards the ESP32. Lead the wires straight up and click the caps on.
 6. Keep every wire at least 3 mm below the top of the cells and never route one over them. Leave a relaxed loop where each cell cable leaves the cell.
