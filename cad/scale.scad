@@ -106,7 +106,7 @@ moving_reach = moving_screw-washer_height-cell_height;
 mount_length = cell_hole_end+cell_hole_spacing+4;
 mount_center = cell_length/2-mount_length/2;
 // How far the rails run from the pedestals, across the width towards the far wall.
-rail_far = base_width/2-wall+0.1;
+rail_far = platform_width/2-wall+0.1;
 // Half-width of the clear channel between the two cells, where the boards live.
 cell_gap = cell_pitch-cell_width/2-3-rail_width;
 pad_x = platform_length/2-15;
@@ -135,7 +135,7 @@ assert(cell_width/2+channel_gap-channel_flank-channel_rise >= 2 && deck_bottom+c
 assert(deck_height-channel_rise >= 4);
 // Each cell, its lips and its rails stay inside the shell.
 assert(cell_pitch+cell_width/2+3+rail_width <= platform_length/2-wall);
-assert(rail_far <= base_width/2-wall+0.1 && mount_center+mount_length/2+rail_top-floor_height <= base_width/2-wall);
+assert(rail_far <= platform_width/2-wall+0.1 && mount_center+mount_length/2+rail_top-floor_height <= platform_width/2-wall);
 // The board envelope and its USB connector stay clear of the shell and inside the notch.
 assert(esp32_base_z+esp32_pcb[2] <= shell_height);
 assert(esp32_x-esp32_pcb[0]/2 >= -(platform_length/2-wall));
@@ -148,7 +148,7 @@ assert(notch_z > floor_height && notch_z <= esp32_base_z+(esp32_pcb[2]+esp32_usb
 // The HX711 pockets stay clear of the cells and their rails, in the gap between the two.
 assert(fixed_side == -1 && esp32_x+hx711_pcb[0]/2+board_clear+cradle_wall <= cell_gap);
 assert(esp32_x-hx711_pcb[0]/2-board_clear-cradle_wall >= -cell_gap);
-assert(hx711_rows[0]-hx711_pcb[1]/2-board_clear-cradle_wall >= -(base_width/2-wall)+2);
+assert(hx711_rows[0]-hx711_pcb[1]/2-board_clear-cradle_wall >= -(platform_width/2-wall)+2);
 assert(hx711_rows[1]+hx711_pcb[1]/2+board_clear+cradle_wall <= esp32_back_y-board_clear-cradle_wall);
 
 module outline(l,w,h,r=6) {
