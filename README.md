@@ -20,7 +20,7 @@ The SH02 holds two rolls and weighs 1.5 kg empty, so it is both wider and top-he
 - **Calibration from Home Assistant** — three buttons: empty platform, known mass, dryer with full spools; no reflashing
 - **Persistent calibration** — zero, gain and spool capture survive reboots and OTA updates; there is no startup tare
 - **Stability gate** — a five-second window rejects captures while the reading moves and drops missing, stale or saturated samples
-- **Four printed parts, M3 only** — base, top and click-in board caps; eight M3 × 20 screws clamp the two cells
+- **Five printed parts, M3 only** — base, top, one ESP32 cap and two HX711 caps; eight M3 × 20 screws clamp the two cells
 - **Parametric CAD** — one OpenSCAD file with assertions for every screw length and clearance
 - **Diagnostics** — raw counts and per-cell counts, noise range, saved calibration, chip temperature and Wi-Fi signal
 
