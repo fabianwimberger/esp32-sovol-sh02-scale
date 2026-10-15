@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: pip install esphome
+      - name: Host tests, mesh checks and config validation
+        run: make check
+
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: pip install esphome
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/esphome
+          key: ${{ runner.os }}-esphome-${{ hashFiles('firmware/**') }}
+          restore-keys: |
+            ${{ runner.os }}-esphome-
+      - name: Compile firmware
+        run: make firmware

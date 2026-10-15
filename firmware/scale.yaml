@@ -1,0 +1,298 @@
+substitutions:
+  device_name: sh02-scale
+  friendly_name: SH02 Scale
+  # One HX711 per load cell; the two cells are summed in the firmware.
+  dout_pin_a: GPIO4
+  clock_pin_a: GPIO3
+  dout_pin_b: GPIO6
+  clock_pin_b: GPIO5
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  includes:
+    - readings.h
+
+esp32:
+  variant: esp32c3
+  flash_size: 4MB
+  framework:
+    type: esp-idf
+
+logger:
+  # Five samples and several published values per second would bury everything else.
+  logs:
+    hx711: INFO
+    sensor: INFO
+
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  ap:
+    ssid: SH02 Scale Setup
+captive_portal:
+
+preferences:
+  flash_write_interval: 10s
+
+globals:
+  # Latest raw counts of each cell; the sum is what the filter and calibration see.
+  - id: counts_a
+    type: float
+    initial_value: 'NAN'
+  - id: counts_b
+    type: float
+    initial_value: 'NAN'
+  - id: zero_counts
+    type: float
+    restore_value: true
+    initial_value: '0'
+  - id: counts_per_g
+    type: float
+    restore_value: true
+    initial_value: '0'
+  - id: zero_set
+    type: bool
+    restore_value: true
+    initial_value: 'false'
+  - id: dryer_tare_g
+    type: float
+    restore_value: true
+    initial_value: '0'
+  - id: tare_set
+    type: bool
+    restore_value: true
+    initial_value: 'false'
+
+number:
+  - platform: template
+    name: Full filament mass
+    id: full_g
+    unit_of_measurement: g
+    min_value: 100
+    max_value: 2000
+    step: 1
+    initial_value: 2000
+    optimistic: true
+    restore_value: true
+    mode: box
+  - platform: template
+    name: Calibration mass
+    id: reference_g
+    entity_category: config
+    unit_of_measurement: g
+    min_value: 100
+    max_value: 3000
+    step: 1
+    initial_value: 1000
+    optimistic: true
+    restore_value: true
+    mode: box
+  - platform: template
+    name: Calibration noise limit
+    id: noise_limit
+    entity_category: config
+    min_value: 50
+    max_value: 10000
+    step: 50
+    initial_value: 1000
+    optimistic: true
+    restore_value: true
+    mode: box
+
+sensor:
+  # Raw cell readings only feed the sum; they are not published on their own.
+  - platform: hx711
+    id: cell_a
+    internal: true
+    dout_pin: ${dout_pin_a}
+    clk_pin: ${clock_pin_a}
+    gain: 128
+    update_interval: 200ms
+    on_raw_value:
+      then:
+        - lambda: id(counts_a) = x;
+  - platform: hx711
+    id: cell_b
+    internal: true
+    dout_pin: ${dout_pin_b}
+    clk_pin: ${clock_pin_b}
+    gain: 128
+    update_interval: 200ms
+    on_raw_value:
+      then:
+        - lambda: id(counts_b) = x;
+  - platform: template
+    name: Raw counts
+    id: raw_counts
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 1s
+    lambda: return id(counts_a) + id(counts_b);
+  - platform: template
+    name: Gross mass
+    id: gross_g
+    unit_of_measurement: g
+    device_class: weight
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    lambda: return filament_scale::samples.mass(millis(), id(zero_counts), id(counts_per_g));
+  - platform: template
+    name: Filament remaining
+    id: remaining_g
+    unit_of_measurement: g
+    device_class: weight
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    lambda: |-
+      if (!id(tare_set)) return NAN;
+      float gross = filament_scale::samples.mass(millis(), id(zero_counts), id(counts_per_g));
+      if (!std::isfinite(gross) || gross < id(dryer_tare_g) - 50) return NAN;
+      return std::max(0.0f, gross - id(dryer_tare_g));
+  - platform: template
+    name: Filament remaining percent
+    unit_of_measurement: '%'
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 5s
+    lambda: |-
+      if (!id(tare_set)) return NAN;
+      float gross = filament_scale::samples.mass(millis(), id(zero_counts), id(counts_per_g));
+      if (!std::isfinite(gross) || gross < id(dryer_tare_g) - 50) return NAN;
+      return std::min(100.0f, std::max(0.0f, 100.0f * (gross - id(dryer_tare_g)) / id(full_g).state));
+  - platform: template
+    name: Raw noise range
+    entity_category: diagnostic
+    # A state class makes Home Assistant treat it as a number and keeps it out of the logbook.
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    lambda: |-
+      return filament_scale::samples.ready(millis()) ? filament_scale::samples.range() : NAN;
+  - platform: template
+    name: Saved dryer and empty spool
+    entity_category: diagnostic
+    unit_of_measurement: g
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: |-
+      return id(tare_set) ? id(dryer_tare_g) : NAN;
+  - platform: internal_temperature
+    name: Electronics temperature
+    entity_category: diagnostic
+    update_interval: 60s
+  - platform: wifi_signal
+    name: WiFi signal
+    update_interval: 60s
+  # The saved calibration, so it can be read back and re-entered if the flash is ever erased.
+  - platform: template
+    name: Calibration zero
+    entity_category: diagnostic
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: |-
+      return id(zero_set) ? id(zero_counts) : NAN;
+  - platform: template
+    name: Calibration counts per gram
+    entity_category: diagnostic
+    state_class: measurement
+    accuracy_decimals: 3
+    update_interval: 60s
+    lambda: |-
+      return std::abs(id(counts_per_g)) >= 0.001f ? id(counts_per_g) : NAN;
+  # Per-cell raw counts, for balancing the two cells while calibrating.
+  - platform: template
+    name: Cell A counts
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 5s
+    lambda: return id(counts_a);
+  - platform: template
+    name: Cell B counts
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 5s
+    lambda: return id(counts_b);
+
+# The two cells are read asynchronously; sum the latest of each into the filter.
+interval:
+  - interval: 200ms
+    then:
+      - lambda: filament_scale::samples.add(id(counts_a) + id(counts_b), millis());
+
+binary_sensor:
+  - platform: template
+    name: Reading stable
+    lambda: |-
+      return std::abs(id(counts_per_g)) >= 0.001f &&
+        filament_scale::samples.stable(millis(), 5.0f * std::abs(id(counts_per_g)));
+  - platform: template
+    name: Scale calibrated
+    entity_category: diagnostic
+    lambda: return std::abs(id(counts_per_g)) >= 0.001f;
+  - platform: template
+    name: Filament estimate configured
+    entity_category: diagnostic
+    lambda: return id(tare_set);
+
+text_sensor:
+  - platform: template
+    name: Setup message
+    id: setup_message
+    entity_category: diagnostic
+    update_interval: never
+
+button:
+  - platform: template
+    name: '1 Capture empty platform'
+    entity_category: config
+    on_press:
+      - lambda: |-
+          if (!filament_scale::samples.stable(millis(), id(noise_limit).state)) {
+            id(setup_message).publish_state("Rejected: wait for fresh, steady readings");
+            return;
+          }
+          id(zero_counts) = filament_scale::samples.mean();
+          id(zero_set) = true;
+          id(counts_per_g) = 0;
+          id(tare_set) = false;
+          id(setup_message).publish_state("Zero saved; add calibration mass");
+  - platform: template
+    name: '2 Capture calibration mass'
+    entity_category: config
+    on_press:
+      - lambda: |-
+          if (!id(zero_set) || !filament_scale::samples.stable(millis(), id(noise_limit).state)) {
+            id(setup_message).publish_state("Rejected: capture zero and wait for steady readings");
+            return;
+          }
+          float delta = filament_scale::samples.mean() - id(zero_counts);
+          if (std::abs(delta) < 10.0f * id(noise_limit).state) {
+            id(setup_message).publish_state("Rejected: calibration signal too small");
+            return;
+          }
+          id(counts_per_g) = delta / id(reference_g).state;
+          id(tare_set) = false;
+          id(setup_message).publish_state("Calibration saved; fit dryer with a full spool");
+  - platform: template
+    name: '3 Capture dryer with full spool'
+    entity_category: config
+    on_press:
+      - lambda: |-
+          float gross = filament_scale::samples.mass(millis(), id(zero_counts), id(counts_per_g));
+          float tare = gross - id(full_g).state;
+          if (!std::isfinite(gross) || tare < 300 || gross > 4500 ||
+              !filament_scale::samples.stable(millis(), 5.0f * std::abs(id(counts_per_g)))) {
+            id(setup_message).publish_state("Rejected: calibrate first, then fit a steady dryer with its spool");
+            return;
+          }
+          // Everything except the filament: dryer plus empty spools.
+          id(dryer_tare_g) = tare;
+          id(tare_set) = true;
+          id(setup_message).publish_state("Spool saved; filament remaining counts down from here");

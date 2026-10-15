@@ -1,0 +1,6 @@
+.esphome/
+secrets.yaml
+__pycache__/
+.venv/
+.ruff_cache/
+tests/readings_test
