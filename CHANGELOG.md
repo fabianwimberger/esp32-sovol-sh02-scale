@@ -16,7 +16,7 @@ First release of the printed filament scale for the Sovol SH02 dryer: CAD, print
 - Calibrate from Home Assistant with three buttons: empty platform, known mass, dryer with full spools
 - Keep zero, gain and spool capture across reboots and OTA updates, with no startup tare
 - Reject captures while the reading moves, and drop missing, stale or saturated samples
-- Four printed parts in print orientation: base, top and two click-in board caps, held together by eight M3 × 20 screws
+- Five printed parts in print orientation: base, top, an ESP32 cap and two HX711 caps, held together by eight M3 × 20 screws
 - Parametric OpenSCAD source with assertions for every screw length and clearance
 - Diagnostic sensors for raw counts, per-cell counts, noise range, saved calibration, chip temperature and Wi-Fi signal
 
