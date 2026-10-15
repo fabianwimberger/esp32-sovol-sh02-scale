@@ -11,12 +11,12 @@ Printed weighing plinth for a Sovol SH02 filament dryer. An ESP32-C3 and two HX7
 
 A filament dryer hides the spools, so the only way to know whether a roll will last for the next print is to open the lid and guess. Weighing the whole dryer answers that without touching it: capture the weight once with full spools inside, and everything that disappears afterwards is filament.
 
-The SH02 holds two rolls and weighs 1.5 kg empty, so it is both wider and top-heavier than a single-spool dryer. The scale is a 251 × 172 mm floating top on a 251 × 200 mm base, built around **two** cheap 5 kg bar load cells. Their raw counts are added in the firmware, which doubles the capacity to 10 kg, keeps the reading correct for an off-centre load, and supports the deck at two points instead of one. The SH02's 246 × 167 mm bottom sits inside the top's rim.
+The SH02 holds two rolls and weighs 1.5 kg empty, so it is both wider and top-heavier than a single-spool dryer. The scale is a 251 × 172 mm floating top on a 251 × 200 mm base, built around **two** cheap 5 kg bar load cells that run across the width, one near each end of the length and mirrored so their free ends sit at opposite corners. Their raw counts are added in the firmware, which doubles the capacity to 10 kg, keeps the reading correct for an off-centre load, and carries the top on two seats spread along its length instead of one line across it. The SH02's 246 × 167 mm bottom sits inside the top's rim.
 
 ## Features
 
 - **Filament remaining in grams and percent** — counts down from the mass of the spools you loaded
-- **Two load cells, summed** — 10 kg working capacity and a stable two-point support for a tall, top-heavy dryer
+- **Two load cells, summed** — 10 kg working capacity; the cells run across the width, one near each end, so the top is carried along its whole length
 - **Calibration from Home Assistant** — three buttons: empty platform, known mass, dryer with full spools; no reflashing
 - **Persistent calibration** — zero, gain and spool capture survive reboots and OTA updates; there is no startup tare
 - **Stability gate** — a five-second window rejects captures while the reading moves and drops missing, stale or saturated samples
@@ -64,7 +64,7 @@ dryer + spools ─► floating top ─► two 5 kg cells ─► two HX711 ─►
 filament remaining = gross mass − (dryer + empty spools)
 ```
 
-Each cell is a cantilever: its cable end is clamped to a pedestal in the base, its free end to the top. Nothing else connects the base and the top, so every gram on the top passes through the cells, and the two counts add up to the whole load. The cells sit side by side, 120 mm apart, so the top is carried on a wide two-point support.
+Each cell is a cantilever: its cable end is clamped to a pedestal in the base, its free end to the top. Nothing else connects the base and the top, so every gram on the top passes through the cells, and the two counts add up to the whole load. The cells run across the width, one near each end of the length, and are mirrored so their free ends sit at opposite corners: the top is carried on two seats 130 mm apart along its length, so it barely cantilevers.
 
 Calibration stores three values. **1 Capture empty platform** saves the zero, **2 Capture calibration mass** the counts per gram of the summed reading, and **3 Capture dryer with full spools** subtracts **Full filament mass** from the reading and saves the rest as dryer plus empty spools. Repeat step 3 for every new set of spools, because empty spools differ in weight.
 
@@ -99,7 +99,7 @@ Parameters at the top of `cad/scale.scad` adapt the print to other hardware:
 |---|---|---|
 | `platform_length`, `platform_width` | `251`, `172` | Top; the rim leaves 246 × 167 mm for the dryer's bottom |
 | `base_width` | `200` | Footing; wider than the top resists tipping |
-| `cell_pitch` | `60` | Distance of each load cell from the centreline (60 → 120 mm apart) |
+| `cell_pitch` | `65` | Distance of each load cell from the centreline along the length (65 → 130 mm apart) |
 | `cell_hole_spacing`, `cell_hole_end` | `15`, `5` | Hole pattern of the 80 × 12.7 × 12.7 mm cell |
 | `fixed_side` | `-1` | End of the cells that is clamped to the base |
 | `esp32_pcb`, `hx711_pcb` | measured | Board sizes the pockets are cut for |
